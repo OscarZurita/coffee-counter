@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Coffee cup illustration</title>
+  <desc id="desc">A teal coffee cup and saucer illustration used as the tappable counter button.</desc>
+  <image
+    href="my_coffee_cup1.png"
+    xlink:href="my_coffee_cup1.png"
+    x="0"
+    y="0"
+    width="1080"
+    height="1080"
+    preserveAspectRatio="xMidYMid meet"
+  />
+</svg>

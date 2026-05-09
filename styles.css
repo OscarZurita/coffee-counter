@@ -1,8 +1,11 @@
 :root {
   --pink: #f37d9b;
-  --pink-dark: #db6a87;
-  --shadow: rgba(102, 45, 79, 0.36);
-  --focus: rgba(255, 242, 216, 0.92);
+  --ink: #fff9ef;
+  --ink-shadow: rgba(103, 48, 83, 0.32);
+  --shadow: rgba(118, 57, 88, 0.5);
+  --focus: rgba(255, 245, 220, 0.96);
+  --badge: rgba(255, 249, 239, 0.2);
+  --badge-border: rgba(255, 249, 239, 0.38);
 }
 
 * {
@@ -36,7 +39,11 @@ img {
 }
 
 .counter-button {
-  width: min(92vw, 560px);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  width: min(90vw, 600px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -47,7 +54,7 @@ img {
 }
 
 .counter-button:active {
-  transform: translateY(6px) scale(0.97);
+  transform: translateY(4px) scale(0.985);
 }
 
 .counter-button:focus-visible {
@@ -56,17 +63,83 @@ img {
   border-radius: 32px;
 }
 
+.button-shadow {
+  position: absolute;
+  z-index: 0;
+  width: 52%;
+  height: 8%;
+  bottom: 19%;
+  border-radius: 999px;
+  background: var(--shadow);
+  filter: blur(16px);
+  opacity: 0.72;
+}
+
 .cup-art {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: auto;
   pointer-events: none;
-  filter: drop-shadow(0 10px 0 rgba(255, 255, 255, 0.08));
-  transform-origin: center 78%;
-  animation: drift 3.6s ease-in-out infinite;
+  transform-origin: center 74%;
+  animation: drift 3.8s ease-in-out infinite;
+}
+
+.counter-readout {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  min-width: 76px;
+  padding: 10px 20px 11px;
+  border: 1px solid var(--badge-border);
+  border-radius: 999px;
+  background: var(--badge);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 22px rgba(121, 52, 84, 0.16);
+}
+
+.counter-value {
+  display: block;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 3.2vw, 1.9rem);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-shadow: 0 2px 0 var(--ink-shadow);
+}
+
+.plus-one {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 18%;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 2.8vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.86);
+  text-shadow: 0 2px 0 var(--ink-shadow);
+  pointer-events: none;
 }
 
 .counter-button.is-counting .cup-art {
-  animation: tap-bounce 320ms ease;
+  animation: tap-bounce 360ms cubic-bezier(0.18, 0.84, 0.32, 1.2);
+}
+
+.counter-button.is-counting .counter-readout {
+  animation: counter-pop 360ms ease;
+}
+
+.counter-button.is-counting .plus-one {
+  animation: plus-rise 420ms ease;
+}
+
+.counter-button.is-counting .button-shadow {
+  animation: shadow-squish 360ms ease;
 }
 
 .sr-only {
@@ -84,35 +157,86 @@ img {
 @keyframes drift {
   0%,
   100% {
-    transform: translateY(0) rotate(-1deg);
+    transform: translateY(0) rotate(-1.25deg);
   }
 
   50% {
-    transform: translateY(-6px) rotate(1deg);
+    transform: translateY(-7px) rotate(1.2deg);
   }
 }
 
 @keyframes tap-bounce {
   0% {
-    transform: scale(1) translateY(0) rotate(0deg);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
 
   30% {
-    transform: scale(0.95) translateY(8px) rotate(-2deg);
+    transform: translateY(14px) scale(0.94) rotate(-2.2deg);
   }
 
-  62% {
-    transform: scale(1.04) translateY(-8px) rotate(1.5deg);
+  68% {
+    transform: translateY(-11px) scale(1.04) rotate(1.8deg);
   }
 
   100% {
-    transform: scale(1) translateY(0) rotate(0deg);
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes counter-pop {
+  0% {
+    transform: translateX(-50%) scale(1);
+  }
+
+  40% {
+    transform: translateX(-50%) scale(1.18);
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes plus-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.82);
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(1.08);
+  }
+}
+
+@keyframes shadow-squish {
+  0% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 0.72;
+  }
+
+  35% {
+    transform: scaleX(0.9) scaleY(0.76);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 0.72;
   }
 }
 
 @media (max-width: 640px) {
   .counter-button {
-    width: min(96vw, 520px);
+    width: min(96vw, 560px);
+  }
+
+  .counter-readout {
+    bottom: 10%;
   }
 }
 

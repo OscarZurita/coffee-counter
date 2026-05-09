@@ -10,12 +10,12 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="description"
-      content="A minimal coffee counter with a single tap-anytime cup button."
+      content="A minimal coffee counter with one illustrated cup button."
     />
     <title>Coffee Counter</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="assets/coffee-icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="assets/coffee-icon.svg" />
+    <link rel="icon" href="assets/coffee_pink_background.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/coffee_pink_background.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -26,13 +26,18 @@
         type="button"
         aria-describedby="screenReaderStatus"
       >
+        <span class="button-shadow" aria-hidden="true"></span>
         <img
           class="cup-art"
-          src="assets/coffee-cup.svg"
+          src="assets/my_coffee_cup1.svg"
           alt=""
-          width="520"
-          height="380"
+          width="1080"
+          height="1080"
         />
+        <span class="counter-readout" aria-hidden="true">
+          <span id="totalCount" class="counter-value">0</span>
+        </span>
+        <span id="plusOne" class="plus-one" aria-hidden="true">+1</span>
       </button>
 
       <p id="screenReaderStatus" class="sr-only" aria-live="polite">

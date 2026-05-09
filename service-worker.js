@@ -1,12 +1,13 @@
-const CACHE_NAME = "coffee-counter-v2";
+const CACHE_NAME = "coffee-counter-v3";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
-  "./assets/coffee-icon.svg",
-  "./assets/coffee-cup.svg"
+  "./assets/coffee_pink_background.png",
+  "./assets/my_coffee_cup1.svg",
+  "./assets/my_coffee_cup1.png"
 ];
 
 self.addEventListener("install", (event) => {

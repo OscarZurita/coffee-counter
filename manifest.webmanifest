@@ -1,16 +1,16 @@
 {
   "name": "Coffee Counter",
   "short_name": "Coffee",
-  "description": "A minimal coffee counter with a single pink-and-teal cup button.",
+  "description": "A minimal coffee counter with one illustrated cup button.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f37d9b",
   "theme_color": "#f37d9b",
   "icons": [
     {
-      "src": "assets/coffee-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "assets/coffee_pink_background.png",
+      "sizes": "1080x1080",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
