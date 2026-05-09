@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Coffee counter icon</title>
+  <desc id="desc">A warm coffee mug with steam on a cozy rounded square background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#f4eadb" />
+      <stop offset="100%" stop-color="#d9bba1" />
+    </linearGradient>
+    <linearGradient id="mug" x1="0%" x2="0%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff8ef" />
+      <stop offset="100%" stop-color="#f0dfcd" />
+    </linearGradient>
+    <linearGradient id="coffee" x1="0%" x2="0%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#7e5540" />
+      <stop offset="100%" stop-color="#5c3b2b" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="140" fill="url(#bg)" />
+  <circle cx="126" cy="112" r="54" fill="#fff6eb" opacity=".55" />
+  <circle cx="402" cy="402" r="74" fill="#c9d8c5" opacity=".55" />
+  <path
+    d="M205 139c-8-23 9-39 12-60 2-13-1-25-12-39M260 145c-8-23 9-39 12-60 2-13-1-25-12-39M315 139c-8-23 9-39 12-60 2-13-1-25-12-39"
+    fill="none"
+    stroke="#fffaf5"
+    stroke-linecap="round"
+    stroke-width="20"
+    opacity=".72"
+  />
+  <g transform="translate(96 142)">
+    <path
+      d="M78 74h168c41 0 74 33 74 74v54c0 41-33 74-74 74H104c-41 0-74-33-74-74v-28c0-55 45-100 100-100Z"
+      fill="url(#mug)"
+    />
+    <path
+      d="M108 96h124c28 0 50 22 50 50v34c0 28-22 50-50 50H116c-33 0-60-27-60-60v-14c0-33 27-60 60-60Z"
+      fill="url(#coffee)"
+    />
+    <path
+      d="M283 118h12c39 0 71 32 71 71s-32 71-71 71h-12"
+      fill="none"
+      stroke="#f4e2cf"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="28"
+    />
+    <path
+      d="M82 229h190"
+      fill="none"
+      stroke="#e2c9b2"
+      stroke-linecap="round"
+      stroke-width="18"
+    />
+  </g>
+</svg>

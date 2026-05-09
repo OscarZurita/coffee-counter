@@ -1,0 +1,17 @@
+{
+  "name": "Coffee Counter",
+  "short_name": "Coffee",
+  "description": "A cozy little counter for tapping after each cup of coffee.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3eadc",
+  "theme_color": "#8b6146",
+  "icons": [
+    {
+      "src": "assets/coffee-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
