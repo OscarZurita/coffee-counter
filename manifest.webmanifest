@@ -1,11 +1,11 @@
 {
   "name": "Coffee Counter",
   "short_name": "Coffee",
-  "description": "A cozy little counter for tapping after each cup of coffee.",
+  "description": "A minimal coffee counter with a single pink-and-teal cup button.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f3eadc",
-  "theme_color": "#8b6146",
+  "background_color": "#f37d9b",
+  "theme_color": "#f37d9b",
   "icons": [
     {
       "src": "assets/coffee-icon.svg",

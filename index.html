@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#8b6146" />
+    <meta name="theme-color" content="#f37d9b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Coffee Counter" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="description"
-      content="A cozy little coffee counter you can tap after each cup."
+      content="A minimal coffee counter with a single tap-anytime cup button."
     />
     <title>Coffee Counter</title>
     <link rel="manifest" href="manifest.webmanifest" />
@@ -19,76 +19,25 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="backdrop" aria-hidden="true">
-      <div class="blob blob-one"></div>
-      <div class="blob blob-two"></div>
-      <div class="blob blob-three"></div>
-    </div>
-
     <main class="app-shell">
-      <section class="counter-card" aria-label="Coffee counter">
-        <div class="tape tape-left" aria-hidden="true"></div>
-        <div class="tape tape-right" aria-hidden="true"></div>
+      <button
+        id="counterButton"
+        class="counter-button"
+        type="button"
+        aria-describedby="screenReaderStatus"
+      >
+        <img
+          class="cup-art"
+          src="assets/coffee-cup.svg"
+          alt=""
+          width="520"
+          height="380"
+        />
+      </button>
 
-        <p class="eyebrow">little daily ritual</p>
-        <h1>Coffee Counter</h1>
-        <p class="intro">
-          Tap the mug whenever you finish a coffee. The number stays saved on
-          this device, so it feels more like a tiny habit than a note.
-        </p>
-
-        <button
-          id="counterButton"
-          class="counter-button"
-          type="button"
-          aria-describedby="buttonHint statusLine"
-        >
-          <span class="steam steam-one"></span>
-          <span class="steam steam-two"></span>
-          <span class="steam steam-three"></span>
-          <span class="button-inner">
-            <img
-              class="cup-art"
-              src="assets/coffee-icon.svg"
-              alt=""
-              width="144"
-              height="144"
-            />
-            <span class="button-label">tap for one more cup</span>
-          </span>
-        </button>
-
-        <p id="buttonHint" class="button-hint">One tap per coffee.</p>
-
-        <div class="count-panel" aria-live="polite">
-          <p id="totalCount" class="count-value">0</p>
-          <p id="statusLine" class="count-caption">No coffees yet today.</p>
-        </div>
-
-        <div class="detail-row">
-          <article class="detail-pill">
-            <span id="todayCount" class="detail-value">0</span>
-            <span class="detail-label">today</span>
-          </article>
-          <article class="detail-pill">
-            <span id="lastSaved" class="detail-value">not saved yet</span>
-            <span class="detail-label">last saved</span>
-          </article>
-        </div>
-
-        <div class="actions">
-          <button id="undoButton" class="ghost-button" type="button">
-            Undo last tap
-          </button>
-          <button id="resetButton" class="ghost-button danger" type="button">
-            Reset counter
-          </button>
-        </div>
-
-        <p class="footer-note">
-          Best enjoyed with a soft playlist, a warm mug, and a quiet corner.
-        </p>
-      </section>
+      <p id="screenReaderStatus" class="sr-only" aria-live="polite">
+        Coffee counter ready.
+      </p>
     </main>
 
     <script src="app.js"></script>

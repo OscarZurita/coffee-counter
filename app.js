@@ -1,18 +1,12 @@
 const STORAGE_KEY = "coffee-counter-state-v1";
 
 const counterButton = document.getElementById("counterButton");
-const undoButton = document.getElementById("undoButton");
-const resetButton = document.getElementById("resetButton");
-const totalCount = document.getElementById("totalCount");
-const todayCount = document.getElementById("todayCount");
-const statusLine = document.getElementById("statusLine");
-const lastSaved = document.getElementById("lastSaved");
+const screenReaderStatus = document.getElementById("screenReaderStatus");
 
 const createDefaultState = () => ({
   total: 0,
   today: 0,
   dateKey: getTodayKey(),
-  previous: null,
   updatedAt: null
 });
 
@@ -27,67 +21,32 @@ function attachEvents() {
   counterButton.addEventListener("click", () => {
     normalizeTodayState();
 
-    state.previous = snapshotState();
     state.total += 1;
     state.today += 1;
     state.updatedAt = new Date().toISOString();
 
     saveState();
-    render({ animateCount: true, vibrate: true });
-  });
-
-  undoButton.addEventListener("click", () => {
-    if (!state.previous) {
-      return;
-    }
-
-    state = {
-      ...state,
-      ...state.previous,
-      previous: null,
-      updatedAt: new Date().toISOString()
-    };
-
-    saveState();
-    render();
-  });
-
-  resetButton.addEventListener("click", () => {
-    if (state.total === 0 && state.today === 0) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Reset the coffee counter back to zero?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    state.previous = snapshotState();
-    state.total = 0;
-    state.today = 0;
-    state.dateKey = getTodayKey();
-    state.updatedAt = new Date().toISOString();
-
-    saveState();
-    render();
+    render({ animateCup: true, announceTap: true, vibrate: true });
   });
 }
 
 function render(options = {}) {
-  totalCount.textContent = state.total.toLocaleString();
-  todayCount.textContent = `${state.today} ${state.today === 1 ? "cup" : "cups"}`;
-  statusLine.textContent = buildStatusLine();
-  lastSaved.textContent = formatSavedAt(state.updatedAt);
-  undoButton.disabled = !state.previous;
-  resetButton.disabled = state.total === 0 && state.today === 0;
+  const label = buildAccessibilityLabel();
 
-  if (options.animateCount) {
-    totalCount.classList.remove("bump");
+  counterButton.setAttribute("aria-label", label);
+  counterButton.setAttribute("title", buildTooltipLabel());
+  document.title = state.total > 0 ? `Coffee Counter (${state.total})` : "Coffee Counter";
+
+  if (options.announceTap) {
+    screenReaderStatus.textContent = `Coffee counted. ${label}`;
+  } else {
+    screenReaderStatus.textContent = label;
+  }
+
+  if (options.animateCup) {
+    counterButton.classList.remove("is-counting");
     window.requestAnimationFrame(() => {
-      totalCount.classList.add("bump");
+      counterButton.classList.add("is-counting");
     });
   }
 
@@ -96,32 +55,26 @@ function render(options = {}) {
   }
 }
 
-function buildStatusLine() {
+function buildAccessibilityLabel() {
   if (state.total === 0) {
-    return "No coffees yet today.";
+    return "Coffee counter. No coffees counted yet. Tap the coffee cup to add one.";
   }
 
-  if (state.today === 0) {
-    return `You are at ${state.total} ${pluralize(state.total)} overall.`;
+  return `Coffee counter. ${state.total} ${pluralize(
+    state.total
+  )} total, ${state.today} ${pluralize(state.today)} today. Tap the coffee cup to add one more.`;
+}
+
+function buildTooltipLabel() {
+  if (state.total === 0) {
+    return "Tap to count your first coffee";
   }
 
-  if (state.today === 1) {
-    return "One coffee today. Cozy start.";
-  }
-
-  return `${state.today} coffees today, ${state.total} in total.`;
+  return `${state.total} ${pluralize(state.total)} total, ${state.today} today`;
 }
 
 function pluralize(amount) {
   return amount === 1 ? "coffee" : "coffees";
-}
-
-function snapshotState() {
-  return {
-    total: state.total,
-    today: state.today,
-    dateKey: state.dateKey
-  };
 }
 
 function normalizeTodayState() {
@@ -133,7 +86,6 @@ function normalizeTodayState() {
 
   state.today = 0;
   state.dateKey = todayKey;
-  state.previous = null;
   saveState();
 }
 
@@ -144,23 +96,6 @@ function getTodayKey() {
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-}
-
-function formatSavedAt(value) {
-  if (!value) {
-    return "not saved yet";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "saved locally";
-  }
-
-  return date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit"
-  });
 }
 
 function loadState() {

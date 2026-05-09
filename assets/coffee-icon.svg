@@ -1,54 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Coffee counter icon</title>
-  <desc id="desc">A warm coffee mug with steam on a cozy rounded square background.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
-      <stop offset="0%" stop-color="#f4eadb" />
-      <stop offset="100%" stop-color="#d9bba1" />
-    </linearGradient>
-    <linearGradient id="mug" x1="0%" x2="0%" y1="0%" y2="100%">
-      <stop offset="0%" stop-color="#fff8ef" />
-      <stop offset="100%" stop-color="#f0dfcd" />
-    </linearGradient>
-    <linearGradient id="coffee" x1="0%" x2="0%" y1="0%" y2="100%">
-      <stop offset="0%" stop-color="#7e5540" />
-      <stop offset="100%" stop-color="#5c3b2b" />
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="140" fill="url(#bg)" />
-  <circle cx="126" cy="112" r="54" fill="#fff6eb" opacity=".55" />
-  <circle cx="402" cy="402" r="74" fill="#c9d8c5" opacity=".55" />
+  <desc id="desc">A flat illustrated teal coffee cup on a pink background.</desc>
+  <rect width="512" height="512" rx="132" fill="#f37d9b"/>
+  <ellipse cx="246" cy="389" rx="134" ry="34" fill="#7c4661"/>
+  <ellipse cx="263" cy="357" rx="140" ry="40" fill="#29c7b0" stroke="#14211d" stroke-width="4"/>
+  <ellipse cx="263" cy="366" rx="116" ry="24" fill="#1fa694" opacity=".72" stroke="#14211d" stroke-width="3"/>
   <path
-    d="M205 139c-8-23 9-39 12-60 2-13-1-25-12-39M260 145c-8-23 9-39 12-60 2-13-1-25-12-39M315 139c-8-23 9-39 12-60 2-13-1-25-12-39"
-    fill="none"
-    stroke="#fffaf5"
-    stroke-linecap="round"
-    stroke-width="20"
-    opacity=".72"
+    d="M147 218c0-32 52-57 116-57s116 25 116 57v57c0 38-52 70-116 70s-116-32-116-70Z"
+    fill="#2fbaa9"
+    stroke="#14211d"
+    stroke-width="4"
   />
-  <g transform="translate(96 142)">
-    <path
-      d="M78 74h168c41 0 74 33 74 74v54c0 41-33 74-74 74H104c-41 0-74-33-74-74v-28c0-55 45-100 100-100Z"
-      fill="url(#mug)"
-    />
-    <path
-      d="M108 96h124c28 0 50 22 50 50v34c0 28-22 50-50 50H116c-33 0-60-27-60-60v-14c0-33 27-60 60-60Z"
-      fill="url(#coffee)"
-    />
-    <path
-      d="M283 118h12c39 0 71 32 71 71s-32 71-71 71h-12"
-      fill="none"
-      stroke="#f4e2cf"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="28"
-    />
-    <path
-      d="M82 229h190"
-      fill="none"
-      stroke="#e2c9b2"
-      stroke-linecap="round"
-      stroke-width="18"
-    />
-  </g>
+  <ellipse cx="263" cy="217" rx="116" ry="57" fill="#6de0d2" stroke="#14211d" stroke-width="4"/>
+  <ellipse cx="263" cy="222" rx="103" ry="45" fill="#4b1c16"/>
+  <path
+    d="M222 200c15-11 47-15 74-8 21 6 36 17 39 28-8 10-25 16-45 17-35 2-71-14-68-37Z"
+    fill="#6d331d"
+    opacity=".82"
+  />
+  <path
+    d="M354 222h20c17 0 30 13 30 30v8c0 18-15 33-33 33h-21"
+    fill="#2fbaa9"
+    stroke="#14211d"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M279 225c-8 12-5 37 4 50 8 12 20 15 28 6 7-7 7-21 6-33-2-15-7-27-14-32-8-6-17-4-24 9Z"
+    fill="#2bb6a6"
+    opacity=".88"
+    stroke="#14211d"
+    stroke-width="3"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M278 237c4 7 4 21 2 34"
+    fill="none"
+    stroke="#1b776d"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
 </svg>
