@@ -505,9 +505,45 @@ function registerServiceWorker() {
     return;
   }
 
+  let hasReloadedForNewWorker = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hasReloadedForNewWorker) {
+      return;
+    }
+
+    hasReloadedForNewWorker = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {
-      return null;
-    });
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .then((registration) => {
+        registration.update().catch(() => {
+          return null;
+        });
+
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+
+        registration.addEventListener("updatefound", () => {
+          const installingWorker = registration.installing;
+
+          if (!installingWorker) {
+            return;
+          }
+
+          installingWorker.addEventListener("statechange", () => {
+            if (installingWorker.state === "installed" && registration.waiting) {
+              registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch(() => {
+        return null;
+      });
   });
 }
