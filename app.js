@@ -1,6 +1,8 @@
 const STORAGE_KEY = "coffee-counter-state-v2";
 const LEGACY_STORAGE_KEYS = ["coffee-counter-state-v1"];
 const DEFAULT_BACKGROUND = "#f37d9b";
+const MAX_HISTORY_ENTRIES = 5000;
+const HISTORY_PREVIEW_LIMIT = 8;
 const IMAGE_PRESETS = {
   reference: "assets/my_coffee_cup1.png",
   colacao: "assets/colacao%201.png",
@@ -23,6 +25,11 @@ const plusOne = document.getElementById("plusOne");
 const screenReaderStatus = document.getElementById("screenReaderStatus");
 const backgroundColorInput = document.getElementById("backgroundColorInput");
 const backgroundColorValue = document.getElementById("backgroundColorValue");
+const historyCountValue = document.getElementById("historyCountValue");
+const historySummary = document.getElementById("historySummary");
+const historyList = document.getElementById("historyList");
+const exportHistoryButton = document.getElementById("exportHistoryButton");
+const clearHistoryButton = document.getElementById("clearHistoryButton");
 const resetCounterButton = document.getElementById("resetCounterButton");
 const imageRadios = Array.from(document.querySelectorAll('input[name="cupImage"]'));
 
@@ -31,6 +38,7 @@ const createDefaultState = () => ({
   today: 0,
   dateKey: getTodayKey(),
   updatedAt: null,
+  clickHistory: [],
   settings: {
     backgroundColor: DEFAULT_BACKGROUND,
     imageKey: "reference"
@@ -39,6 +47,10 @@ const createDefaultState = () => ({
 
 let state = loadState();
 const tapSoundTemplate = typeof Audio === "function" ? new Audio(TAP_SOUND_SRC) : null;
+const timestampFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short"
+});
 let settingsOpen = false;
 let pendingServiceWorker = null;
 
@@ -83,9 +95,11 @@ function attachEvents() {
     }
 
     normalizeTodayState();
+    const timestamp = new Date().toISOString();
     state.total += 1;
     state.today += 1;
-    state.updatedAt = new Date().toISOString();
+    state.updatedAt = timestamp;
+    recordClickTimestamp(timestamp);
 
     persistState();
     render({ animateCup: true, announceTap: true, vibrate: true });
@@ -122,12 +136,40 @@ function attachEvents() {
     });
   });
 
+  exportHistoryButton.addEventListener("click", () => {
+    if (!state.clickHistory.length) {
+      return;
+    }
+
+    exportHistoryAsCsv();
+    render({ announcement: "Click history exported." });
+  });
+
+  clearHistoryButton.addEventListener("click", () => {
+    if (!state.clickHistory.length) {
+      return;
+    }
+
+    const confirmed = window.confirm("Clear your saved click history?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    state.clickHistory = [];
+    state.updatedAt = new Date().toISOString();
+    persistState();
+    render({ announcement: "Click history cleared." });
+  });
+
   resetCounterButton.addEventListener("click", () => {
     if (state.total === 0) {
       return;
     }
 
-    const confirmed = window.confirm("Reset the counter back to zero?");
+    const confirmed = window.confirm(
+      "Reset the counter back to zero? Your saved click history will stay on this device."
+    );
 
     if (!confirmed) {
       return;
@@ -227,6 +269,7 @@ function applyCounterPressPose(pointerState = { x: 0, y: 0 }) {
 function render(options = {}) {
   const label = buildAccessibilityLabel();
   const activeImage = getActiveImageSource();
+  const historyCount = state.clickHistory.length;
 
   totalCount.textContent = state.total.toLocaleString();
   cupArt.src = activeImage;
@@ -249,6 +292,12 @@ function render(options = {}) {
   imageRadios.forEach((radio) => {
     radio.checked = radio.value === state.settings.imageKey;
   });
+
+  historyCountValue.textContent = `${historyCount.toLocaleString()} saved`;
+  historySummary.textContent = buildHistorySummary();
+  renderHistoryList();
+  exportHistoryButton.disabled = historyCount === 0;
+  clearHistoryButton.disabled = historyCount === 0;
 
   if (options.announceTap) {
     screenReaderStatus.textContent = `Coffee counted. ${label}`;
@@ -289,6 +338,49 @@ function buildTooltipLabel() {
   return `${state.total} ${pluralize(state.total)} total, ${state.today} today`;
 }
 
+function buildHistorySummary() {
+  const historyCount = state.clickHistory.length;
+
+  if (historyCount === 0) {
+    return "No click timestamps saved yet.";
+  }
+
+  const latestTimestamp = formatTimestamp(state.clickHistory[0]);
+  const firstTimestamp = formatTimestamp(state.clickHistory[historyCount - 1]);
+
+  if (historyCount === 1) {
+    return `1 tap saved. First and latest tap: ${latestTimestamp}.`;
+  }
+
+  return `${historyCount.toLocaleString()} taps saved. Latest: ${latestTimestamp}. First: ${firstTimestamp}.`;
+}
+
+function renderHistoryList() {
+  historyList.replaceChildren();
+
+  const recentEntries = state.clickHistory.slice(0, HISTORY_PREVIEW_LIMIT);
+
+  if (!recentEntries.length) {
+    const emptyItem = document.createElement("li");
+    emptyItem.className = "history-item history-item-empty";
+    emptyItem.textContent = "Your recent taps will show up here.";
+    historyList.append(emptyItem);
+    return;
+  }
+
+  for (const timestamp of recentEntries) {
+    const item = document.createElement("li");
+    item.className = "history-item";
+
+    const label = document.createElement("span");
+    label.className = "history-entry-label";
+    label.textContent = formatTimestamp(timestamp);
+
+    item.append(label);
+    historyList.append(item);
+  }
+}
+
 function getActiveImageSource() {
   return IMAGE_PRESETS[state.settings.imageKey] || IMAGE_PRESETS.reference;
 }
@@ -313,6 +405,14 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function recordClickTimestamp(timestamp) {
+  state.clickHistory.unshift(timestamp);
+
+  if (state.clickHistory.length > MAX_HISTORY_ENTRIES) {
+    state.clickHistory.length = MAX_HISTORY_ENTRIES;
+  }
+}
+
 function normalizeTodayState() {
   const todayKey = getTodayKey();
 
@@ -332,6 +432,16 @@ function getTodayKey() {
   const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function formatTimestamp(timestamp) {
+  const parsed = new Date(timestamp);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+
+  return timestampFormatter.format(parsed);
 }
 
 function loadState() {
@@ -368,15 +478,21 @@ function loadStoredValue() {
 
 function normalizeState(candidate) {
   const base = createDefaultState();
+  const normalizedCandidate = candidate && typeof candidate === "object" ? candidate : {};
   const nextState = {
     ...base,
-    ...candidate,
+    ...normalizedCandidate,
     settings: {
       ...base.settings,
-      ...(candidate.settings || {})
+      ...(normalizedCandidate.settings || {})
     }
   };
 
+  nextState.total = normalizeCount(nextState.total);
+  nextState.today = normalizeCount(nextState.today);
+  nextState.clickHistory = normalizeClickHistory(
+    normalizedCandidate.clickHistory || normalizedCandidate.history
+  );
   nextState.settings.backgroundColor = normalizeHexColor(nextState.settings.backgroundColor);
 
   if (
@@ -413,6 +529,59 @@ function normalizeHexColor(value) {
   }
 
   return DEFAULT_BACKGROUND;
+}
+
+function normalizeCount(value) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return Math.floor(value);
+}
+
+function normalizeClickHistory(entries) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries
+    .map((entry) => {
+      const parsed = new Date(entry);
+
+      if (Number.isNaN(parsed.getTime())) {
+        return null;
+      }
+
+      return parsed.toISOString();
+    })
+    .filter(Boolean)
+    .slice(0, MAX_HISTORY_ENTRIES);
+}
+
+function exportHistoryAsCsv() {
+  const rows = [
+    ["index", "timestamp_iso", "local_time"],
+    ...state.clickHistory.map((timestamp, index) => [
+      String(index + 1),
+      timestamp,
+      formatTimestamp(timestamp)
+    ])
+  ];
+  const csv = rows
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    )
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const objectUrl = window.URL.createObjectURL(blob);
+  const downloadLink = document.createElement("a");
+
+  downloadLink.href = objectUrl;
+  downloadLink.download = `coffee-counter-history-${getTodayKey()}.csv`;
+  document.body.append(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  window.URL.revokeObjectURL(objectUrl);
 }
 
 async function playTapSound() {

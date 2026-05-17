@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-counter-v14";
+const CACHE_NAME = "coffee-counter-v15";
 const APP_ASSETS = [
   "./",
   "./index.html",

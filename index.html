@@ -185,6 +185,34 @@
             </div>
           </section>
 
+          <section class="setting-group" aria-labelledby="historySettingLabel">
+            <div class="setting-row">
+              <h2 id="historySettingLabel" class="setting-label">Click History</h2>
+              <span id="historyCountValue" class="setting-value">0 saved</span>
+            </div>
+            <p class="setting-hint">
+              Saved only on this device. Every tap keeps its own date and time.
+            </p>
+
+            <div class="history-panel">
+              <p id="historySummary" class="history-summary">No coffees recorded yet.</p>
+              <ul id="historyList" class="history-list"></ul>
+            </div>
+
+            <div class="history-actions">
+              <button id="exportHistoryButton" class="secondary-button" type="button">
+                Export CSV
+              </button>
+              <button
+                id="clearHistoryButton"
+                class="secondary-button secondary-button-danger"
+                type="button"
+              >
+                Clear History
+              </button>
+            </div>
+          </section>
+
           <button id="resetCounterButton" class="reset-button" type="button">
             Reset Counter
           </button>
