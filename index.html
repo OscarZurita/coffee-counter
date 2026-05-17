@@ -14,8 +14,8 @@
     />
     <title>Coffee Counter</title>
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="assets/coffee_pink_background.png" type="image/png" />
-    <link rel="apple-touch-icon" href="assets/coffee_pink_background.png" />
+    <link rel="icon" href="assets/my_coffee_cup1.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/my_coffee_cup1.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -104,12 +104,8 @@
           <section class="setting-group" aria-labelledby="imageSettingLabel">
             <div class="setting-row">
               <h2 id="imageSettingLabel" class="setting-label">Image</h2>
-              <label for="customImageInput" id="uploadButton" class="upload-button">
-                Upload
-              </label>
-              <input id="customImageInput" type="file" accept="image/*" hidden />
             </div>
-            <p class="setting-hint">Tap any image to switch it instantly.</p>
+            <p class="setting-hint">Tap any icon to switch it instantly.</p>
 
             <div class="image-options">
               <label class="image-option">
@@ -130,8 +126,8 @@
                     />
                   </span>
                   <span class="image-copy">
-                    <span class="image-title">Reference</span>
-                    <span class="image-subtitle">The current cozy cup art.</span>
+                    <span class="image-title">Classic Cup</span>
+                    <span class="image-subtitle">The cozy coffee cup illustration.</span>
                   </span>
                   <span class="image-check" aria-hidden="true"></span>
                 </span>
@@ -142,48 +138,46 @@
                   class="image-radio"
                   type="radio"
                   name="cupImage"
-                  value="minimal"
+                  value="colacao"
                 />
                 <span class="image-card">
                   <span class="image-visual">
                     <img
                       class="image-thumb"
-                      src="assets/coffee-cup.svg"
+                      src="assets/colacao%201.png"
                       alt=""
-                      width="520"
-                      height="380"
+                      width="500"
+                      height="500"
                     />
                   </span>
                   <span class="image-copy">
-                    <span class="image-title">Minimal</span>
-                    <span class="image-subtitle">A simpler illustrated version.</span>
+                    <span class="image-title">Colacao</span>
+                    <span class="image-subtitle">The glass and yellow tin version.</span>
                   </span>
                   <span class="image-check" aria-hidden="true"></span>
                 </span>
               </label>
 
-              <label id="customImageCard" class="image-option">
+              <label class="image-option">
                 <input
-                  id="customImageRadio"
                   class="image-radio"
                   type="radio"
                   name="cupImage"
-                  value="custom"
+                  value="taza"
                 />
-                <span class="image-card image-card-custom">
+                <span class="image-card">
                   <span class="image-visual">
                     <img
-                      id="customPreview"
                       class="image-thumb"
-                      src="assets/my_coffee_cup1.png"
+                      src="assets/Taza%20icono%20cafe.png"
                       alt=""
-                      width="1080"
-                      height="1080"
+                      width="768"
+                      height="768"
                     />
                   </span>
                   <span class="image-copy">
-                    <span id="customImageLabel" class="image-title">Custom</span>
-                    <span class="image-subtitle">Upload your own image here.</span>
+                    <span class="image-title">Coffee Mug</span>
+                    <span class="image-subtitle">The yellow mug icon version.</span>
                   </span>
                   <span class="image-check" aria-hidden="true"></span>
                 </span>

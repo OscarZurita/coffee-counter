@@ -3,7 +3,8 @@ const LEGACY_STORAGE_KEYS = ["coffee-counter-state-v1"];
 const DEFAULT_BACKGROUND = "#f37d9b";
 const IMAGE_PRESETS = {
   reference: "assets/my_coffee_cup1.png",
-  minimal: "assets/coffee-cup.svg"
+  colacao: "assets/colacao%201.png",
+  taza: "assets/Taza%20icono%20cafe.png"
 };
 const TAP_SOUND_SRC = "./sounds/749860__etheraudio__satisfying-click.wav";
 
@@ -22,12 +23,6 @@ const plusOne = document.getElementById("plusOne");
 const screenReaderStatus = document.getElementById("screenReaderStatus");
 const backgroundColorInput = document.getElementById("backgroundColorInput");
 const backgroundColorValue = document.getElementById("backgroundColorValue");
-const uploadButton = document.getElementById("uploadButton");
-const customImageInput = document.getElementById("customImageInput");
-const customImageCard = document.getElementById("customImageCard");
-const customImageRadio = document.getElementById("customImageRadio");
-const customPreview = document.getElementById("customPreview");
-const customImageLabel = document.getElementById("customImageLabel");
 const resetCounterButton = document.getElementById("resetCounterButton");
 const imageRadios = Array.from(document.querySelectorAll('input[name="cupImage"]'));
 
@@ -38,8 +33,7 @@ const createDefaultState = () => ({
   updatedAt: null,
   settings: {
     backgroundColor: DEFAULT_BACKGROUND,
-    imageKey: "reference",
-    customImageData: ""
+    imageKey: "reference"
   }
 });
 
@@ -122,57 +116,10 @@ function attachEvents() {
         return;
       }
 
-      if (radio.value === "custom" && !state.settings.customImageData) {
-        customImageInput.click();
-        return;
-      }
-
       state.settings.imageKey = radio.value;
       persistState();
       render({ announcement: "Image updated." });
     });
-  });
-
-  customImageInput.addEventListener("change", async () => {
-    const [file] = customImageInput.files || [];
-
-    if (!file) {
-      return;
-    }
-
-    const previousSettings = {
-      ...state.settings
-    };
-
-    try {
-      const fileData = await readFileAsDataURL(file);
-
-      state.settings.customImageData = fileData;
-      state.settings.imageKey = "custom";
-
-      if (!persistState()) {
-        state.settings = previousSettings;
-        persistState();
-        window.alert("That image was too large to save locally. Try a smaller file.");
-        render({ announcement: "Custom image could not be saved." });
-        return;
-      }
-
-      render({ announcement: "Custom image updated." });
-    } catch (error) {
-      render({ announcement: "Unable to load that image." });
-    } finally {
-      customImageInput.value = "";
-    }
-  });
-
-  customImageCard.addEventListener("click", (event) => {
-    if (!customImageRadio.disabled) {
-      return;
-    }
-
-    event.preventDefault();
-    customImageInput.click();
   });
 
   resetCounterButton.addEventListener("click", () => {
@@ -280,7 +227,6 @@ function applyCounterPressPose(pointerState = { x: 0, y: 0 }) {
 function render(options = {}) {
   const label = buildAccessibilityLabel();
   const activeImage = getActiveImageSource();
-  const hasCustomImage = Boolean(state.settings.customImageData);
 
   totalCount.textContent = state.total.toLocaleString();
   cupArt.src = activeImage;
@@ -299,12 +245,6 @@ function render(options = {}) {
   themeColorMeta.setAttribute("content", state.settings.backgroundColor);
   backgroundColorInput.value = state.settings.backgroundColor;
   backgroundColorValue.textContent = state.settings.backgroundColor.toUpperCase();
-
-  customPreview.src = hasCustomImage ? state.settings.customImageData : IMAGE_PRESETS.reference;
-  customImageLabel.textContent = hasCustomImage ? "Custom" : "Upload first";
-  uploadButton.textContent = hasCustomImage ? "Replace" : "Upload";
-  customImageRadio.disabled = !hasCustomImage;
-  customImageCard.classList.toggle("is-disabled", !hasCustomImage);
 
   imageRadios.forEach((radio) => {
     radio.checked = radio.value === state.settings.imageKey;
@@ -350,10 +290,6 @@ function buildTooltipLabel() {
 }
 
 function getActiveImageSource() {
-  if (state.settings.imageKey === "custom" && state.settings.customImageData) {
-    return state.settings.customImageData;
-  }
-
   return IMAGE_PRESETS[state.settings.imageKey] || IMAGE_PRESETS.reference;
 }
 
@@ -444,13 +380,8 @@ function normalizeState(candidate) {
   nextState.settings.backgroundColor = normalizeHexColor(nextState.settings.backgroundColor);
 
   if (
-    nextState.settings.imageKey !== "custom" &&
     !Object.prototype.hasOwnProperty.call(IMAGE_PRESETS, nextState.settings.imageKey)
   ) {
-    nextState.settings.imageKey = "reference";
-  }
-
-  if (nextState.settings.imageKey === "custom" && !nextState.settings.customImageData) {
     nextState.settings.imageKey = "reference";
   }
 
@@ -482,22 +413,6 @@ function normalizeHexColor(value) {
   }
 
   return DEFAULT_BACKGROUND;
-}
-
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.addEventListener("load", () => {
-      resolve(String(reader.result));
-    });
-
-    reader.addEventListener("error", () => {
-      reject(reader.error);
-    });
-
-    reader.readAsDataURL(file);
-  });
 }
 
 async function playTapSound() {
