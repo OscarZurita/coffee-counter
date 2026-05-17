@@ -27,11 +27,10 @@
           type="button"
           aria-label="Open settings"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.2"></circle>
+          <svg class="settings-gear" viewBox="0 0 24 24" aria-hidden="true">
             <path
-              d="M12 2.9v2.2M12 18.9v2.2M21.1 12h-2.2M5.1 12H2.9M18.44 5.56l-1.56 1.56M7.12 16.88l-1.56 1.56M18.44 18.44l-1.56-1.56M7.12 7.12 5.56 5.56"
-            ></path>
+              d="M10.86 2.57c.42-1.6 2.7-1.6 3.12 0l.14.52a1.66 1.66 0 0 0 2.5 1.03l.46-.29c1.4-.87 3.02.75 2.15 2.15l-.29.46a1.66 1.66 0 0 0 1.03 2.5l.52.14c1.6.42 1.6 2.7 0 3.12l-.52.14a1.66 1.66 0 0 0-1.03 2.5l.29.46c.87 1.4-.75 3.02-2.15 2.15l-.46-.29a1.66 1.66 0 0 0-2.5 1.03l-.14.52c-.42 1.6-2.7 1.6-3.12 0l-.14-.52a1.66 1.66 0 0 0-2.5-1.03l-.46.29c-1.4.87-3.02-.75-2.15-2.15l.29-.46a1.66 1.66 0 0 0-1.03-2.5l-.52-.14c-1.6-.42-1.6-2.7 0-3.12l.52-.14a1.66 1.66 0 0 0 1.03-2.5l-.29-.46c-.87-1.4.75-3.02 2.15-2.15l.46.29a1.66 1.66 0 0 0 2.5-1.03l.14-.52ZM12.42 9.25a2.75 2.75 0 1 0 0 5.5 2.75 2.75 0 0 0 0-5.5Z"
+            />
           </svg>
         </button>
 
@@ -97,6 +96,7 @@
               </label>
               <input id="customImageInput" type="file" accept="image/*" hidden />
             </div>
+            <p class="setting-hint">Tap any image to switch it instantly.</p>
 
             <div class="image-options">
               <label class="image-option">
@@ -107,14 +107,20 @@
                   value="reference"
                 />
                 <span class="image-card">
-                  <img
-                    class="image-thumb"
-                    src="assets/my_coffee_cup1.png"
-                    alt=""
-                    width="1080"
-                    height="1080"
-                  />
-                  <span class="image-name">Reference</span>
+                  <span class="image-visual">
+                    <img
+                      class="image-thumb"
+                      src="assets/my_coffee_cup1.png"
+                      alt=""
+                      width="1080"
+                      height="1080"
+                    />
+                  </span>
+                  <span class="image-copy">
+                    <span class="image-title">Reference</span>
+                    <span class="image-subtitle">The current cozy cup art.</span>
+                  </span>
+                  <span class="image-check" aria-hidden="true"></span>
                 </span>
               </label>
 
@@ -126,14 +132,20 @@
                   value="minimal"
                 />
                 <span class="image-card">
-                  <img
-                    class="image-thumb"
-                    src="assets/coffee-cup.svg"
-                    alt=""
-                    width="520"
-                    height="380"
-                  />
-                  <span class="image-name">Minimal</span>
+                  <span class="image-visual">
+                    <img
+                      class="image-thumb"
+                      src="assets/coffee-cup.svg"
+                      alt=""
+                      width="520"
+                      height="380"
+                    />
+                  </span>
+                  <span class="image-copy">
+                    <span class="image-title">Minimal</span>
+                    <span class="image-subtitle">A simpler illustrated version.</span>
+                  </span>
+                  <span class="image-check" aria-hidden="true"></span>
                 </span>
               </label>
 
@@ -146,15 +158,21 @@
                   value="custom"
                 />
                 <span class="image-card image-card-custom">
-                  <img
-                    id="customPreview"
-                    class="image-thumb"
-                    src="assets/my_coffee_cup1.png"
-                    alt=""
-                    width="1080"
-                    height="1080"
-                  />
-                  <span id="customImageLabel" class="image-name">Custom</span>
+                  <span class="image-visual">
+                    <img
+                      id="customPreview"
+                      class="image-thumb"
+                      src="assets/my_coffee_cup1.png"
+                      alt=""
+                      width="1080"
+                      height="1080"
+                    />
+                  </span>
+                  <span class="image-copy">
+                    <span id="customImageLabel" class="image-title">Custom</span>
+                    <span class="image-subtitle">Upload your own image here.</span>
+                  </span>
+                  <span class="image-check" aria-hidden="true"></span>
                 </span>
               </label>
             </div>

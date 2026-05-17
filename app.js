@@ -163,6 +163,15 @@ function attachEvents() {
     }
   });
 
+  customImageCard.addEventListener("click", (event) => {
+    if (!customImageRadio.disabled) {
+      return;
+    }
+
+    event.preventDefault();
+    customImageInput.click();
+  });
+
   resetCounterButton.addEventListener("click", () => {
     if (state.total === 0) {
       return;
