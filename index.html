@@ -185,6 +185,37 @@
             </div>
           </section>
 
+          <section class="setting-group" aria-labelledby="locationSettingLabel">
+            <div class="setting-row">
+              <h2 id="locationSettingLabel" class="setting-label">Tap Location</h2>
+              <span id="locationTrackingValue" class="setting-value">Off</span>
+            </div>
+            <p id="locationTrackingStatus" class="setting-hint">
+              Off. Taps only save the date and time.
+            </p>
+
+            <label class="toggle-card" for="locationTrackingInput">
+              <span class="toggle-copy">
+                <span class="toggle-title">Save location with each tap</span>
+                <span class="toggle-subtitle">
+                  Uses your phone GPS and keeps the coordinates only on this device.
+                </span>
+              </span>
+
+              <span class="toggle-control">
+                <input
+                  id="locationTrackingInput"
+                  class="toggle-input"
+                  type="checkbox"
+                  aria-describedby="locationTrackingStatus"
+                />
+                <span class="toggle-switch" aria-hidden="true">
+                  <span class="toggle-knob"></span>
+                </span>
+              </span>
+            </label>
+          </section>
+
           <section class="setting-group" aria-labelledby="historySettingLabel">
             <div class="setting-row">
               <h2 id="historySettingLabel" class="setting-label">Click History</h2>
@@ -246,6 +277,12 @@
               <span class="history-stat-note">Coffees counted today.</span>
             </article>
 
+            <article class="history-stat-card">
+              <span class="history-stat-label">Located</span>
+              <strong id="historyStatLocated" class="history-stat-value">0</strong>
+              <span class="history-stat-note">Entries with a saved GPS point.</span>
+            </article>
+
             <article class="history-stat-card history-stat-card-wide">
               <span class="history-stat-label">Latest Tap</span>
               <strong id="historyStatLatest" class="history-stat-detail">Not yet</strong>
@@ -258,7 +295,8 @@
           <div id="historyEmptyState" class="history-empty-state" hidden>
             <p class="history-empty-title">Your coffee timeline is still empty.</p>
             <p class="history-empty-copy">
-              Tap the cup on the main screen and each coffee will appear here with its time.
+              Tap the cup on the main screen and each coffee will appear here with its time
+              and optional place.
             </p>
           </div>
 

@@ -436,6 +436,94 @@ body.is-history-open .history-screen {
   cursor: pointer;
 }
 
+.toggle-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 248, 239, 0.24);
+  border-radius: 22px;
+  background: rgba(255, 248, 239, 0.12);
+  cursor: pointer;
+}
+
+.toggle-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toggle-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.toggle-subtitle {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  opacity: 0.78;
+}
+
+.toggle-control {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-switch {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 32px;
+  border: 1px solid rgba(255, 248, 239, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 248, 239, 0.14);
+  box-shadow: inset 0 1px 3px rgba(103, 48, 83, 0.12);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 150ms ease;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 249, 239, 0.96);
+  box-shadow: 0 4px 10px rgba(103, 48, 83, 0.22);
+  transition: transform 180ms ease;
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: rgba(255, 249, 239, 0.28);
+  border-color: rgba(255, 249, 239, 0.62);
+}
+
+.toggle-input:checked + .toggle-switch .toggle-knob {
+  transform: translateX(24px);
+}
+
+.toggle-input:focus-visible + .toggle-switch {
+  outline: 4px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.toggle-input:disabled + .toggle-switch {
+  opacity: 0.5;
+}
+
 .image-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -642,7 +730,7 @@ body.is-history-open .history-screen {
 
 .history-overview {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -806,6 +894,23 @@ body.is-history-open .history-screen {
   font-size: 0.82rem;
   line-height: 1.4;
   opacity: 0.74;
+}
+
+.history-entry-location {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(255, 249, 239, 0.92);
+}
+
+.history-entry-location-pending {
+  opacity: 0.82;
+}
+
+.history-entry-location-denied,
+.history-entry-location-unavailable,
+.history-entry-location-unsupported {
+  opacity: 0.72;
 }
 
 .history-actions {
@@ -1022,6 +1127,14 @@ body.is-history-open .history-screen {
     position: static;
     align-self: center;
     justify-self: end;
+  }
+
+  .toggle-card {
+    grid-template-columns: 1fr;
+  }
+
+  .toggle-control {
+    justify-self: start;
   }
 
   .history-overview {

@@ -1,8 +1,19 @@
 const STORAGE_KEY = "coffee-counter-state-v2";
 const LEGACY_STORAGE_KEYS = ["coffee-counter-state-v1"];
 const DEFAULT_BACKGROUND = "#f37d9b";
+const GEOLOCATION_TIMEOUT_MS = 8000;
+const GEOLOCATION_MAXIMUM_AGE_MS = 120000;
+const LOCATION_COORDINATE_DECIMALS = 5;
 const MAX_HISTORY_ENTRIES = 5000;
 const HISTORY_PREVIEW_LIMIT = 4;
+const VALID_LOCATION_STATUSES = new Set([
+  "off",
+  "pending",
+  "saved",
+  "denied",
+  "unavailable",
+  "unsupported"
+]);
 const IMAGE_PRESETS = {
   reference: "assets/my_coffee_cup1.png",
   colacao: "assets/colacao%201.png",
@@ -28,12 +39,16 @@ const plusOne = document.getElementById("plusOne");
 const screenReaderStatus = document.getElementById("screenReaderStatus");
 const backgroundColorInput = document.getElementById("backgroundColorInput");
 const backgroundColorValue = document.getElementById("backgroundColorValue");
+const locationTrackingInput = document.getElementById("locationTrackingInput");
+const locationTrackingValue = document.getElementById("locationTrackingValue");
+const locationTrackingStatus = document.getElementById("locationTrackingStatus");
 const historyCountValue = document.getElementById("historyCountValue");
 const historySummary = document.getElementById("historySummary");
 const historyPreviewList = document.getElementById("historyPreviewList");
 const historyGroups = document.getElementById("historyGroups");
 const historyStatTotal = document.getElementById("historyStatTotal");
 const historyStatToday = document.getElementById("historyStatToday");
+const historyStatLocated = document.getElementById("historyStatLocated");
 const historyStatLatest = document.getElementById("historyStatLatest");
 const historyStatFirst = document.getElementById("historyStatFirst");
 const historyEmptyState = document.getElementById("historyEmptyState");
@@ -50,7 +65,8 @@ const createDefaultState = () => ({
   clickHistory: [],
   settings: {
     backgroundColor: DEFAULT_BACKGROUND,
-    imageKey: "reference"
+    imageKey: "reference",
+    locationTrackingEnabled: false
   }
 });
 
@@ -74,6 +90,8 @@ const daySubtitleFormatter = new Intl.DateTimeFormat(undefined, {
 });
 let settingsOpen = false;
 let historyOpen = false;
+let locationPermissionState = supportsGeolocation() ? "idle" : "unsupported";
+let isRequestingLocationPermission = false;
 let pendingServiceWorker = null;
 
 if (tapSoundTemplate) {
@@ -81,6 +99,7 @@ if (tapSoundTemplate) {
   tapSoundTemplate.load();
 }
 
+initializeLocationSupportState();
 normalizeTodayState();
 render();
 attachEvents();
@@ -121,10 +140,15 @@ function attachEvents() {
     state.total += 1;
     state.today += 1;
     state.updatedAt = timestamp;
-    recordClickTimestamp(timestamp);
+    const historyEntry = recordClickTimestamp(timestamp);
 
     persistState();
     render({ animateCup: true, announceTap: true, vibrate: true });
+
+    if (historyEntry.locationStatus === "pending") {
+      captureLocationForEntry(historyEntry.id);
+    }
+
     await playTapSound();
   });
 
@@ -152,6 +176,15 @@ function attachEvents() {
     state.settings.backgroundColor = normalizeHexColor(backgroundColorInput.value);
     persistState();
     render({ announcement: "Background color updated." });
+  });
+
+  locationTrackingInput.addEventListener("change", async () => {
+    if (locationTrackingInput.checked) {
+      await enableLocationTracking();
+      return;
+    }
+
+    disableLocationTracking("Location tracking turned off.");
   });
 
   imageRadios.forEach((radio) => {
@@ -322,6 +355,10 @@ function render(options = {}) {
   themeColorMeta.setAttribute("content", state.settings.backgroundColor);
   backgroundColorInput.value = state.settings.backgroundColor;
   backgroundColorValue.textContent = state.settings.backgroundColor.toUpperCase();
+  locationTrackingInput.checked = state.settings.locationTrackingEnabled;
+  locationTrackingInput.disabled = isRequestingLocationPermission || !supportsGeolocation();
+  locationTrackingValue.textContent = buildLocationTrackingValueLabel();
+  locationTrackingStatus.textContent = buildLocationTrackingStatusText();
 
   imageRadios.forEach((radio) => {
     radio.checked = radio.value === state.settings.imageKey;
@@ -375,15 +412,24 @@ function buildTooltipLabel() {
 
 function buildHistorySummary() {
   const historyCount = state.clickHistory.length;
+  const locatedCount = countHistoryEntriesWithLocation();
 
   if (historyCount === 0) {
     return "No taps saved yet. Your coffee moments will start appearing here once you press the cup.";
   }
 
-  const latestTimestamp = formatTimestamp(state.clickHistory[0]);
+  const latestTimestamp = formatTimestamp(state.clickHistory[0].timestamp);
 
   if (historyCount === 1) {
+    if (locatedCount === 1) {
+      return `1 coffee saved so far, with location. Latest tap: ${latestTimestamp}.`;
+    }
+
     return `1 coffee saved so far. Latest tap: ${latestTimestamp}.`;
+  }
+
+  if (locatedCount > 0) {
+    return `${historyCount.toLocaleString()} coffees saved, ${locatedCount.toLocaleString()} with location. Latest tap: ${latestTimestamp}.`;
   }
 
   return `${historyCount.toLocaleString()} coffees saved. Latest tap: ${latestTimestamp}.`;
@@ -402,7 +448,7 @@ function renderHistoryPreview() {
     return;
   }
 
-  for (const timestamp of recentEntries) {
+  for (const entry of recentEntries) {
     const item = document.createElement("li");
     item.className = "history-preview-item";
 
@@ -415,11 +461,11 @@ function renderHistoryPreview() {
 
     const time = document.createElement("span");
     time.className = "history-preview-time";
-    time.textContent = formatTime(timestamp);
+    time.textContent = formatTime(entry.timestamp);
 
     const meta = document.createElement("span");
     meta.className = "history-preview-meta";
-    meta.textContent = buildHistoryPreviewMeta(timestamp);
+    meta.textContent = buildHistoryPreviewMeta(entry);
 
     copy.append(time, meta);
     item.append(marker, copy);
@@ -429,13 +475,17 @@ function renderHistoryPreview() {
 
 function renderHistoryScreen() {
   const historyCount = state.clickHistory.length;
+  const locatedCount = countHistoryEntriesWithLocation();
   const groups = getHistoryGroups();
 
   historyStatTotal.textContent = historyCount.toLocaleString();
   historyStatToday.textContent = state.today.toLocaleString();
-  historyStatLatest.textContent = historyCount ? formatTimestamp(state.clickHistory[0]) : "Not yet";
+  historyStatLocated.textContent = locatedCount.toLocaleString();
+  historyStatLatest.textContent = historyCount
+    ? formatTimestamp(state.clickHistory[0].timestamp)
+    : "Not yet";
   historyStatFirst.textContent = historyCount
-    ? `First saved tap: ${formatTimestamp(state.clickHistory[historyCount - 1])}.`
+    ? `First saved tap: ${formatTimestamp(state.clickHistory[historyCount - 1].timestamp)}.`
     : "First saved tap: Not yet.";
 
   historyGroups.replaceChildren();
@@ -484,15 +534,15 @@ function createHistoryDayCard(group) {
   const list = document.createElement("ol");
   list.className = "history-day-list";
 
-  for (const timestamp of group.entries) {
-    list.append(createHistoryEntryItem(timestamp));
+  for (const entry of group.entries) {
+    list.append(createHistoryEntryItem(entry));
   }
 
   dayCard.append(header, list);
   return dayCard;
 }
 
-function createHistoryEntryItem(timestamp) {
+function createHistoryEntryItem(entry) {
   const item = document.createElement("li");
   item.className = "history-entry";
 
@@ -505,15 +555,99 @@ function createHistoryEntryItem(timestamp) {
 
   const time = document.createElement("p");
   time.className = "history-entry-time";
-  time.textContent = formatTime(timestamp);
+  time.textContent = formatTime(entry.timestamp);
 
   const note = document.createElement("p");
   note.className = "history-entry-note";
-  note.textContent = formatTimestamp(timestamp);
+  note.textContent = formatTimestamp(entry.timestamp);
 
   copy.append(time, note);
+
+  const locationLine = buildHistoryEntryLocationLine(entry);
+
+  if (locationLine) {
+    const location = document.createElement("p");
+    location.className = `history-entry-location history-entry-location-${entry.locationStatus}`;
+    location.textContent = locationLine;
+    copy.append(location);
+  }
+
   item.append(marker, copy);
   return item;
+}
+
+function buildLocationTrackingValueLabel() {
+  if (!supportsGeolocation()) {
+    return "N/A";
+  }
+
+  if (isRequestingLocationPermission) {
+    return "Wait";
+  }
+
+  return state.settings.locationTrackingEnabled ? "On" : "Off";
+}
+
+function buildLocationTrackingStatusText() {
+  if (!supportsGeolocation()) {
+    return "This browser cannot access phone GPS, so taps can only save the date and time.";
+  }
+
+  if (isRequestingLocationPermission) {
+    return "Allow location access in the browser prompt to attach a place to future taps.";
+  }
+
+  if (state.settings.locationTrackingEnabled) {
+    if (locationPermissionState === "denied") {
+      return "Location permission is blocked right now. Future taps will keep only time until you allow it again.";
+    }
+
+    if (locationPermissionState === "granted") {
+      return "On. Future taps will also save a GPS point on this device only.";
+    }
+
+    return "On. The app will ask your phone for a GPS point each time you tap the cup.";
+  }
+
+  if (locationPermissionState === "denied") {
+    return "Permission was denied. Taps are still saved, but without a place.";
+  }
+
+  return "Off. Taps only save the date and time.";
+}
+
+function countHistoryEntriesWithLocation() {
+  return state.clickHistory.filter((entry) => entry.locationStatus === "saved" && entry.location)
+    .length;
+}
+
+function buildHistoryEntryLocationLine(entry) {
+  if (entry.locationStatus === "saved" && entry.location) {
+    const accuracyLabel =
+      typeof entry.location.accuracy === "number"
+        ? ` +/- ${Math.round(entry.location.accuracy)} m`
+        : "";
+
+    return `${formatCoordinates(entry.location)}${accuracyLabel}`;
+  }
+
+  if (entry.locationStatus === "pending") {
+    return "Saving location...";
+  }
+
+  if (entry.locationStatus === "denied") {
+    return "Location permission denied for this tap.";
+  }
+
+  if (entry.locationStatus === "unsupported") {
+    return "Location is not supported on this device.";
+  }
+
+  if (entry.locationStatus === "unavailable") {
+    return "Location was unavailable for this tap.";
+  }
+
+  return "";
 }
 
 function getActiveImageSource() {
@@ -559,12 +693,161 @@ function isOverlayOpen() {
   return settingsOpen || historyOpen;
 }
 
+function supportsGeolocation() {
+  return typeof navigator !== "undefined" && "geolocation" in navigator;
+}
+
+function initializeLocationSupportState() {
+  if (!supportsGeolocation()) {
+    locationPermissionState = "unsupported";
+    state.settings.locationTrackingEnabled = false;
+    persistState();
+    return;
+  }
+
+  if (state.settings.locationTrackingEnabled) {
+    locationPermissionState = "granted";
+  }
+}
+
+async function enableLocationTracking() {
+  state.settings.locationTrackingEnabled = true;
+  isRequestingLocationPermission = true;
+  locationPermissionState = supportsGeolocation() ? "pending" : "unsupported";
+  persistState();
+  render({
+    announcement:
+      "Location tracking enabled. Allow the GPS prompt to attach places to future taps."
+  });
+
+  if (!supportsGeolocation()) {
+    locationPermissionState = "unsupported";
+    disableLocationTracking(
+      "This browser cannot access location, so taps will keep only the date and time."
+    );
+    return;
+  }
+
+  try {
+    await requestCurrentPosition();
+    locationPermissionState = "granted";
+    isRequestingLocationPermission = false;
+    render({ announcement: "Location access allowed. Future taps will also save a place." });
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      locationPermissionState = "denied";
+      disableLocationTracking(
+        "Location permission was denied. Taps will keep only the date and time."
+      );
+      return;
+    }
+
+    locationPermissionState = "unavailable";
+    isRequestingLocationPermission = false;
+    render({
+      announcement:
+        "Location tracking is on, but the app could not confirm your position right now."
+    });
+  }
+}
+
+function disableLocationTracking(announcement) {
+  state.settings.locationTrackingEnabled = false;
+  isRequestingLocationPermission = false;
+  persistState();
+  render({ announcement });
+}
+
+function requestCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: GEOLOCATION_TIMEOUT_MS,
+      maximumAge: GEOLOCATION_MAXIMUM_AGE_MS
+    });
+  });
+}
+
+async function captureLocationForEntry(entryId) {
+  if (!supportsGeolocation()) {
+    updateHistoryEntry(entryId, { locationStatus: "unsupported" });
+    render();
+    return;
+  }
+
+  try {
+    const position = await requestCurrentPosition();
+
+    updateHistoryEntry(entryId, {
+      location: normalizeStoredLocation(position.coords),
+      locationStatus: "saved"
+    });
+    locationPermissionState = "granted";
+    render();
+  } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      locationPermissionState = "denied";
+      updateHistoryEntry(entryId, { locationStatus: "denied" });
+      state.settings.locationTrackingEnabled = false;
+      persistState();
+      render({
+        announcement:
+          "Location permission was denied. This coffee stayed saved, but without a place."
+      });
+      return;
+    }
+
+    updateHistoryEntry(entryId, { locationStatus: "unavailable" });
+    locationPermissionState = "unavailable";
+    render({ announcement: "Coffee saved, but its location was unavailable." });
+  }
+}
+
+function updateHistoryEntry(entryId, patch) {
+  const entryIndex = state.clickHistory.findIndex((entry) => entry.id === entryId);
+
+  if (entryIndex === -1) {
+    return;
+  }
+
+  const currentEntry = state.clickHistory[entryIndex];
+  const nextEntry = {
+    ...currentEntry,
+    ...patch
+  };
+
+  if (patch.location !== undefined) {
+    nextEntry.location = normalizeStoredLocation(patch.location);
+  }
+
+  if (patch.locationStatus !== undefined) {
+    nextEntry.locationStatus = normalizeLocationStatus(
+      patch.locationStatus,
+      nextEntry.location
+    );
+  }
+
+  state.clickHistory[entryIndex] = nextEntry;
+  state.updatedAt = new Date().toISOString();
+  persistState();
+}
+
+function isPermissionDeniedError(error) {
+  return Boolean(error && error.code === 1);
+}
+
 function recordClickTimestamp(timestamp) {
-  state.clickHistory.unshift(timestamp);
+  const nextEntry = createHistoryEntry(timestamp, {
+    locationStatus: state.settings.locationTrackingEnabled ? "pending" : "off"
+  });
+
+  state.clickHistory.unshift(nextEntry);
 
   if (state.clickHistory.length > MAX_HISTORY_ENTRIES) {
     state.clickHistory.length = MAX_HISTORY_ENTRIES;
   }
+
+  return nextEntry;
 }
 
 function normalizeTodayState() {
@@ -594,8 +877,8 @@ function getDateKeyFromDate(date) {
 function getHistoryGroups() {
   const groups = [];
 
-  for (const timestamp of state.clickHistory) {
-    const parsed = new Date(timestamp);
+  for (const entry of state.clickHistory) {
+    const parsed = new Date(entry.timestamp);
 
     if (Number.isNaN(parsed.getTime())) {
       continue;
@@ -608,19 +891,19 @@ function getHistoryGroups() {
       groups.push({
         dateKey,
         date: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()),
-        entries: [timestamp]
+        entries: [entry]
       });
       continue;
     }
 
-    lastGroup.entries.push(timestamp);
+    lastGroup.entries.push(entry);
   }
 
   return groups;
 }
 
-function buildHistoryPreviewMeta(timestamp) {
-  const parsed = new Date(timestamp);
+function buildHistoryPreviewMeta(entry) {
+  const parsed = new Date(entry.timestamp);
 
   if (Number.isNaN(parsed.getTime())) {
     return "Saved locally";
@@ -629,11 +912,18 @@ function buildHistoryPreviewMeta(timestamp) {
   const dateKey = getDateKeyFromDate(parsed);
   const relativeLabel = buildHistoryDayHeading(dateKey);
 
-  if (relativeLabel === dayTitleFormatter.format(parsed)) {
-    return daySubtitleFormatter.format(parsed);
+  const metaParts = [
+    relativeLabel === dayTitleFormatter.format(parsed)
+      ? daySubtitleFormatter.format(parsed)
+      : `${relativeLabel}, ${daySubtitleFormatter.format(parsed)}`
+  ];
+  const locationMeta = buildHistoryPreviewLocationMeta(entry);
+
+  if (locationMeta) {
+    metaParts.push(locationMeta);
   }
 
-  return `${relativeLabel}, ${daySubtitleFormatter.format(parsed)}`;
+  return metaParts.join(" • ");
 }
 
 function buildHistoryDayHeading(dateKey) {
@@ -659,6 +949,22 @@ function parseDateKey(dateKey) {
   return new Date(year, month - 1, day);
 }
 
+function buildHistoryPreviewLocationMeta(entry) {
+  if (entry.locationStatus === "saved" && entry.location) {
+    return "Location saved";
+  }
+
+  if (entry.locationStatus === "pending") {
+    return "Saving location";
+  }
+
+  if (entry.locationStatus === "denied" || entry.locationStatus === "unavailable") {
+    return "No location";
+  }
+
+  return "";
+}
+
 function formatTimestamp(timestamp) {
   const parsed = new Date(timestamp);
 
@@ -677,6 +983,10 @@ function formatTime(timestamp) {
   }
 
   return timeFormatter.format(parsed);
+}
+
+function formatCoordinates(location) {
+  return `${location.latitude.toFixed(LOCATION_COORDINATE_DECIMALS)}, ${location.longitude.toFixed(LOCATION_COORDINATE_DECIMALS)}`;
 }
 
 function loadState() {
@@ -729,6 +1039,9 @@ function normalizeState(candidate) {
     normalizedCandidate.clickHistory || normalizedCandidate.history
   );
   nextState.settings.backgroundColor = normalizeHexColor(nextState.settings.backgroundColor);
+  nextState.settings.locationTrackingEnabled = Boolean(
+    nextState.settings.locationTrackingEnabled
+  );
 
   if (
     !Object.prototype.hasOwnProperty.call(IMAGE_PRESETS, nextState.settings.imageKey)
@@ -774,32 +1087,138 @@ function normalizeCount(value) {
   return Math.floor(value);
 }
 
+function normalizeHistoryEntry(entry) {
+  if (typeof entry === "string") {
+    const parsed = new Date(entry);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return createHistoryEntry(parsed.toISOString(), {
+      locationStatus: "off"
+    });
+  }
+
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const parsed = new Date(entry.timestamp);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return createHistoryEntry(parsed.toISOString(), {
+    id: entry.id,
+    location: entry.location,
+    locationStatus: entry.locationStatus
+  });
+}
+
+function createHistoryEntry(timestamp, options = {}) {
+  const normalizedLocation = normalizeStoredLocation(options.location);
+
+  return {
+    id: typeof options.id === "string" && options.id ? options.id : createHistoryEntryId(),
+    timestamp,
+    location: normalizedLocation,
+    locationStatus: normalizeLocationStatus(options.locationStatus, normalizedLocation)
+  };
+}
+
+function createHistoryEntryId() {
+  if (
+    typeof crypto !== "undefined" &&
+    crypto &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `tap-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function normalizeLocationStatus(status, location) {
+  if (location) {
+    return "saved";
+  }
+
+  if (VALID_LOCATION_STATUSES.has(status)) {
+    return status;
+  }
+
+  return "off";
+}
+
+function normalizeStoredLocation(location) {
+  if (!location || typeof location !== "object") {
+    return null;
+  }
+
+  const latitude = Number(location.latitude ?? location.lat);
+  const longitude = Number(location.longitude ?? location.lng ?? location.lon);
+  const accuracy =
+    location.accuracy === null || location.accuracy === undefined
+      ? null
+      : Number(location.accuracy);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return {
+    latitude: roundNumber(latitude, LOCATION_COORDINATE_DECIMALS),
+    longitude: roundNumber(longitude, LOCATION_COORDINATE_DECIMALS),
+    accuracy:
+      Number.isFinite(accuracy) && accuracy >= 0 ? roundNumber(accuracy, 1) : null
+  };
+}
+
+function roundNumber(value, decimals) {
+  const multiplier = 10 ** decimals;
+  return Math.round(value * multiplier) / multiplier;
+}
+
 function normalizeClickHistory(entries) {
   if (!Array.isArray(entries)) {
     return [];
   }
 
   return entries
-    .map((entry) => {
-      const parsed = new Date(entry);
-
-      if (Number.isNaN(parsed.getTime())) {
-        return null;
-      }
-
-      return parsed.toISOString();
-    })
+    .map((entry) => normalizeHistoryEntry(entry))
     .filter(Boolean)
     .slice(0, MAX_HISTORY_ENTRIES);
 }
 
 function exportHistoryAsCsv() {
   const rows = [
-    ["index", "timestamp_iso", "local_time"],
-    ...state.clickHistory.map((timestamp, index) => [
+    [
+      "index",
+      "entry_id",
+      "timestamp_iso",
+      "local_time",
+      "location_status",
+      "latitude",
+      "longitude",
+      "accuracy_m"
+    ],
+    ...state.clickHistory.map((entry, index) => [
       String(index + 1),
-      timestamp,
-      formatTimestamp(timestamp)
+      entry.id,
+      entry.timestamp,
+      formatTimestamp(entry.timestamp),
+      entry.locationStatus,
+      entry.location ? entry.location.latitude : "",
+      entry.location ? entry.location.longitude : "",
+      entry.location && typeof entry.location.accuracy === "number"
+        ? entry.location.accuracy
+        : ""
     ])
   ];
   const csv = rows
