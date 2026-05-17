@@ -2,7 +2,7 @@ const STORAGE_KEY = "coffee-counter-state-v2";
 const LEGACY_STORAGE_KEYS = ["coffee-counter-state-v1"];
 const DEFAULT_BACKGROUND = "#f37d9b";
 const MAX_HISTORY_ENTRIES = 5000;
-const HISTORY_PREVIEW_LIMIT = 8;
+const HISTORY_PREVIEW_LIMIT = 4;
 const IMAGE_PRESETS = {
   reference: "assets/my_coffee_cup1.png",
   colacao: "assets/colacao%201.png",
@@ -16,8 +16,11 @@ const counterScreen = document.getElementById("counterScreen");
 const updateBanner = document.getElementById("updateBanner");
 const refreshAppButton = document.getElementById("refreshAppButton");
 const settingsScreen = document.getElementById("settingsScreen");
+const historyScreen = document.getElementById("historyScreen");
 const settingsButton = document.getElementById("settingsButton");
 const closeSettingsButton = document.getElementById("closeSettingsButton");
+const openHistoryButton = document.getElementById("openHistoryButton");
+const closeHistoryButton = document.getElementById("closeHistoryButton");
 const counterButton = document.getElementById("counterButton");
 const cupArt = document.getElementById("cupArt");
 const totalCount = document.getElementById("totalCount");
@@ -27,7 +30,13 @@ const backgroundColorInput = document.getElementById("backgroundColorInput");
 const backgroundColorValue = document.getElementById("backgroundColorValue");
 const historyCountValue = document.getElementById("historyCountValue");
 const historySummary = document.getElementById("historySummary");
-const historyList = document.getElementById("historyList");
+const historyPreviewList = document.getElementById("historyPreviewList");
+const historyGroups = document.getElementById("historyGroups");
+const historyStatTotal = document.getElementById("historyStatTotal");
+const historyStatToday = document.getElementById("historyStatToday");
+const historyStatLatest = document.getElementById("historyStatLatest");
+const historyStatFirst = document.getElementById("historyStatFirst");
+const historyEmptyState = document.getElementById("historyEmptyState");
 const exportHistoryButton = document.getElementById("exportHistoryButton");
 const clearHistoryButton = document.getElementById("clearHistoryButton");
 const resetCounterButton = document.getElementById("resetCounterButton");
@@ -51,7 +60,20 @@ const timestampFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
   timeStyle: "short"
 });
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit"
+});
+const dayTitleFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "long"
+});
+const daySubtitleFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "long",
+  day: "numeric",
+  year: "numeric"
+});
 let settingsOpen = false;
+let historyOpen = false;
 let pendingServiceWorker = null;
 
 if (tapSoundTemplate) {
@@ -69,7 +91,7 @@ function attachEvents() {
   counterButton.addEventListener("pointerleave", resetCounterHoverPose);
   counterButton.addEventListener("pointercancel", resetCounterHoverPose);
   counterButton.addEventListener("pointerdown", (event) => {
-    if (settingsOpen || event.button > 0) {
+    if (isOverlayOpen() || event.button > 0) {
       return;
     }
 
@@ -83,7 +105,7 @@ function attachEvents() {
   });
 
   counterButton.addEventListener("click", async (event) => {
-    if (settingsOpen) {
+    if (isOverlayOpen()) {
       return;
     }
 
@@ -116,6 +138,14 @@ function attachEvents() {
 
   closeSettingsButton.addEventListener("click", () => {
     closeSettings();
+  });
+
+  openHistoryButton.addEventListener("click", () => {
+    openHistory();
+  });
+
+  closeHistoryButton.addEventListener("click", () => {
+    closeHistory();
   });
 
   backgroundColorInput.addEventListener("input", () => {
@@ -184,7 +214,9 @@ function attachEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && settingsOpen) {
+    if (event.key === "Escape" && historyOpen) {
+      closeHistory();
+    } else if (event.key === "Escape" && settingsOpen) {
       closeSettings();
     }
   });
@@ -201,7 +233,7 @@ function attachEvents() {
 }
 
 function handleCounterPointerMove(event) {
-  if (settingsOpen || event.pointerType !== "mouse") {
+  if (isOverlayOpen() || event.pointerType !== "mouse") {
     return;
   }
 
@@ -278,11 +310,13 @@ function render(options = {}) {
   counterButton.setAttribute("title", buildTooltipLabel());
   document.title = state.total > 0 ? `Coffee Counter (${state.total})` : "Coffee Counter";
 
-  body.classList.toggle("is-settings-open", settingsOpen);
+  body.classList.toggle("is-settings-open", settingsOpen && !historyOpen);
+  body.classList.toggle("is-history-open", historyOpen);
   body.classList.toggle("has-update-banner", Boolean(pendingServiceWorker));
-  counterScreen.setAttribute("aria-hidden", String(settingsOpen));
+  counterScreen.setAttribute("aria-hidden", String(settingsOpen || historyOpen));
   updateBanner.setAttribute("aria-hidden", String(!pendingServiceWorker));
-  settingsScreen.setAttribute("aria-hidden", String(!settingsOpen));
+  settingsScreen.setAttribute("aria-hidden", String(!settingsOpen || historyOpen));
+  historyScreen.setAttribute("aria-hidden", String(!historyOpen));
 
   document.documentElement.style.setProperty("--app-bg", state.settings.backgroundColor);
   themeColorMeta.setAttribute("content", state.settings.backgroundColor);
@@ -295,7 +329,8 @@ function render(options = {}) {
 
   historyCountValue.textContent = `${historyCount.toLocaleString()} saved`;
   historySummary.textContent = buildHistorySummary();
-  renderHistoryList();
+  renderHistoryPreview();
+  renderHistoryScreen();
   exportHistoryButton.disabled = historyCount === 0;
   clearHistoryButton.disabled = historyCount === 0;
 
@@ -342,43 +377,143 @@ function buildHistorySummary() {
   const historyCount = state.clickHistory.length;
 
   if (historyCount === 0) {
-    return "No click timestamps saved yet.";
+    return "No taps saved yet. Your coffee moments will start appearing here once you press the cup.";
   }
 
   const latestTimestamp = formatTimestamp(state.clickHistory[0]);
-  const firstTimestamp = formatTimestamp(state.clickHistory[historyCount - 1]);
 
   if (historyCount === 1) {
-    return `1 tap saved. First and latest tap: ${latestTimestamp}.`;
+    return `1 coffee saved so far. Latest tap: ${latestTimestamp}.`;
   }
 
-  return `${historyCount.toLocaleString()} taps saved. Latest: ${latestTimestamp}. First: ${firstTimestamp}.`;
+  return `${historyCount.toLocaleString()} coffees saved. Latest tap: ${latestTimestamp}.`;
 }
 
-function renderHistoryList() {
-  historyList.replaceChildren();
+function renderHistoryPreview() {
+  historyPreviewList.replaceChildren();
 
   const recentEntries = state.clickHistory.slice(0, HISTORY_PREVIEW_LIMIT);
 
   if (!recentEntries.length) {
     const emptyItem = document.createElement("li");
-    emptyItem.className = "history-item history-item-empty";
+    emptyItem.className = "history-preview-item history-preview-item-empty";
     emptyItem.textContent = "Your recent taps will show up here.";
-    historyList.append(emptyItem);
+    historyPreviewList.append(emptyItem);
     return;
   }
 
   for (const timestamp of recentEntries) {
     const item = document.createElement("li");
-    item.className = "history-item";
+    item.className = "history-preview-item";
 
-    const label = document.createElement("span");
-    label.className = "history-entry-label";
-    label.textContent = formatTimestamp(timestamp);
+    const marker = document.createElement("span");
+    marker.className = "history-preview-dot";
+    marker.setAttribute("aria-hidden", "true");
 
-    item.append(label);
-    historyList.append(item);
+    const copy = document.createElement("span");
+    copy.className = "history-preview-copy";
+
+    const time = document.createElement("span");
+    time.className = "history-preview-time";
+    time.textContent = formatTime(timestamp);
+
+    const meta = document.createElement("span");
+    meta.className = "history-preview-meta";
+    meta.textContent = buildHistoryPreviewMeta(timestamp);
+
+    copy.append(time, meta);
+    item.append(marker, copy);
+    historyPreviewList.append(item);
   }
+}
+
+function renderHistoryScreen() {
+  const historyCount = state.clickHistory.length;
+  const groups = getHistoryGroups();
+
+  historyStatTotal.textContent = historyCount.toLocaleString();
+  historyStatToday.textContent = state.today.toLocaleString();
+  historyStatLatest.textContent = historyCount ? formatTimestamp(state.clickHistory[0]) : "Not yet";
+  historyStatFirst.textContent = historyCount
+    ? `First saved tap: ${formatTimestamp(state.clickHistory[historyCount - 1])}.`
+    : "First saved tap: Not yet.";
+
+  historyGroups.replaceChildren();
+  historyEmptyState.hidden = historyCount > 0;
+  historyGroups.hidden = historyCount === 0;
+
+  if (!historyCount) {
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  for (const group of groups) {
+    fragment.append(createHistoryDayCard(group));
+  }
+
+  historyGroups.append(fragment);
+}
+
+function createHistoryDayCard(group) {
+  const dayCard = document.createElement("section");
+  dayCard.className = "history-day-card";
+
+  const header = document.createElement("header");
+  header.className = "history-day-header";
+
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "history-day-copy";
+
+  const title = document.createElement("h2");
+  title.className = "history-day-title";
+  title.textContent = buildHistoryDayHeading(group.dateKey);
+
+  const subtitle = document.createElement("p");
+  subtitle.className = "history-day-subtitle";
+  subtitle.textContent = daySubtitleFormatter.format(group.date);
+
+  titleWrap.append(title, subtitle);
+
+  const countBadge = document.createElement("span");
+  countBadge.className = "history-day-count";
+  countBadge.textContent = `${group.entries.length} ${pluralize(group.entries.length)}`;
+
+  header.append(titleWrap, countBadge);
+
+  const list = document.createElement("ol");
+  list.className = "history-day-list";
+
+  for (const timestamp of group.entries) {
+    list.append(createHistoryEntryItem(timestamp));
+  }
+
+  dayCard.append(header, list);
+  return dayCard;
+}
+
+function createHistoryEntryItem(timestamp) {
+  const item = document.createElement("li");
+  item.className = "history-entry";
+
+  const marker = document.createElement("span");
+  marker.className = "history-entry-marker";
+  marker.setAttribute("aria-hidden", "true");
+
+  const copy = document.createElement("div");
+  copy.className = "history-entry-copy";
+
+  const time = document.createElement("p");
+  time.className = "history-entry-time";
+  time.textContent = formatTime(timestamp);
+
+  const note = document.createElement("p");
+  note.className = "history-entry-note";
+  note.textContent = formatTimestamp(timestamp);
+
+  copy.append(time, note);
+  item.append(marker, copy);
+  return item;
 }
 
 function getActiveImageSource() {
@@ -387,14 +522,29 @@ function getActiveImageSource() {
 
 function openSettings() {
   settingsOpen = true;
+  historyOpen = false;
   render({ announcement: "Settings opened." });
   closeSettingsButton.focus();
 }
 
 function closeSettings() {
   settingsOpen = false;
+  historyOpen = false;
   render({ announcement: "Settings closed." });
   settingsButton.focus();
+}
+
+function openHistory() {
+  settingsOpen = true;
+  historyOpen = true;
+  render({ announcement: "History opened." });
+  closeHistoryButton.focus();
+}
+
+function closeHistory() {
+  historyOpen = false;
+  render({ announcement: "History closed." });
+  openHistoryButton.focus();
 }
 
 function pluralize(amount) {
@@ -403,6 +553,10 @@ function pluralize(amount) {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function isOverlayOpen() {
+  return settingsOpen || historyOpen;
 }
 
 function recordClickTimestamp(timestamp) {
@@ -426,12 +580,83 @@ function normalizeTodayState() {
 }
 
 function getTodayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
+  return getDateKeyFromDate(new Date());
+}
+
+function getDateKeyFromDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getHistoryGroups() {
+  const groups = [];
+
+  for (const timestamp of state.clickHistory) {
+    const parsed = new Date(timestamp);
+
+    if (Number.isNaN(parsed.getTime())) {
+      continue;
+    }
+
+    const dateKey = getDateKeyFromDate(parsed);
+    const lastGroup = groups[groups.length - 1];
+
+    if (!lastGroup || lastGroup.dateKey !== dateKey) {
+      groups.push({
+        dateKey,
+        date: new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()),
+        entries: [timestamp]
+      });
+      continue;
+    }
+
+    lastGroup.entries.push(timestamp);
+  }
+
+  return groups;
+}
+
+function buildHistoryPreviewMeta(timestamp) {
+  const parsed = new Date(timestamp);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Saved locally";
+  }
+
+  const dateKey = getDateKeyFromDate(parsed);
+  const relativeLabel = buildHistoryDayHeading(dateKey);
+
+  if (relativeLabel === dayTitleFormatter.format(parsed)) {
+    return daySubtitleFormatter.format(parsed);
+  }
+
+  return `${relativeLabel}, ${daySubtitleFormatter.format(parsed)}`;
+}
+
+function buildHistoryDayHeading(dateKey) {
+  const todayKey = getTodayKey();
+
+  if (dateKey === todayKey) {
+    return "Today";
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (dateKey === getDateKeyFromDate(yesterday)) {
+    return "Yesterday";
+  }
+
+  const parsed = parseDateKey(dateKey);
+  return dayTitleFormatter.format(parsed);
+}
+
+function parseDateKey(dateKey) {
+  const [year, month, day] = dateKey.split("-").map((part) => Number(part));
+  return new Date(year, month - 1, day);
 }
 
 function formatTimestamp(timestamp) {
@@ -442,6 +667,16 @@ function formatTimestamp(timestamp) {
   }
 
   return timestampFormatter.format(parsed);
+}
+
+function formatTime(timestamp) {
+  const parsed = new Date(timestamp);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown time";
+  }
+
+  return timeFormatter.format(parsed);
 }
 
 function loadState() {

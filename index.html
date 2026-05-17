@@ -194,21 +194,15 @@
               Saved only on this device. Every tap keeps its own date and time.
             </p>
 
-            <div class="history-panel">
+            <div class="history-preview-panel">
               <p id="historySummary" class="history-summary">No coffees recorded yet.</p>
-              <ul id="historyList" class="history-list"></ul>
-            </div>
-
-            <div class="history-actions">
-              <button id="exportHistoryButton" class="secondary-button" type="button">
-                Export CSV
-              </button>
+              <ul id="historyPreviewList" class="history-preview-list"></ul>
               <button
-                id="clearHistoryButton"
-                class="secondary-button secondary-button-danger"
+                id="openHistoryButton"
+                class="secondary-button history-open-button"
                 type="button"
               >
-                Clear History
+                Open Full History
               </button>
             </div>
           </section>
@@ -216,6 +210,72 @@
           <button id="resetCounterButton" class="reset-button" type="button">
             Reset Counter
           </button>
+        </div>
+      </section>
+
+      <section id="historyScreen" class="history-screen" aria-hidden="true">
+        <div class="history-sheet">
+          <header class="history-header">
+            <button
+              id="closeHistoryButton"
+              class="icon-button close-button"
+              type="button"
+              aria-label="Close history"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18 9 12l6-6"></path>
+              </svg>
+            </button>
+
+            <div class="history-header-copy">
+              <p class="history-kicker">Coffee Log</p>
+              <h1 class="history-title">Click History</h1>
+            </div>
+          </header>
+
+          <div class="history-overview">
+            <article class="history-stat-card">
+              <span class="history-stat-label">Saved</span>
+              <strong id="historyStatTotal" class="history-stat-value">0</strong>
+              <span class="history-stat-note">Taps stored on this device.</span>
+            </article>
+
+            <article class="history-stat-card">
+              <span class="history-stat-label">Today</span>
+              <strong id="historyStatToday" class="history-stat-value">0</strong>
+              <span class="history-stat-note">Coffees counted today.</span>
+            </article>
+
+            <article class="history-stat-card history-stat-card-wide">
+              <span class="history-stat-label">Latest Tap</span>
+              <strong id="historyStatLatest" class="history-stat-detail">Not yet</strong>
+              <span id="historyStatFirst" class="history-stat-note">
+                First saved tap: Not yet.
+              </span>
+            </article>
+          </div>
+
+          <div id="historyEmptyState" class="history-empty-state" hidden>
+            <p class="history-empty-title">Your coffee timeline is still empty.</p>
+            <p class="history-empty-copy">
+              Tap the cup on the main screen and each coffee will appear here with its time.
+            </p>
+          </div>
+
+          <div id="historyGroups" class="history-groups"></div>
+
+          <div class="history-actions history-actions-screen">
+            <button id="exportHistoryButton" class="secondary-button" type="button">
+              Export CSV
+            </button>
+            <button
+              id="clearHistoryButton"
+              class="secondary-button secondary-button-danger"
+              type="button"
+            >
+              Clear History
+            </button>
+          </div>
         </div>
       </section>
 
