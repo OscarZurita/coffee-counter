@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-counter-v12";
+const CACHE_NAME = "coffee-counter-v13";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -13,10 +13,7 @@ const APP_ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS))
   );
 });
 

@@ -10,6 +10,8 @@ const TAP_SOUND_SRC = "./sounds/749860__etheraudio__satisfying-click.wav";
 const body = document.body;
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 const counterScreen = document.getElementById("counterScreen");
+const updateBanner = document.getElementById("updateBanner");
+const refreshAppButton = document.getElementById("refreshAppButton");
 const settingsScreen = document.getElementById("settingsScreen");
 const settingsButton = document.getElementById("settingsButton");
 const closeSettingsButton = document.getElementById("closeSettingsButton");
@@ -44,6 +46,7 @@ const createDefaultState = () => ({
 let state = loadState();
 const tapSoundTemplate = typeof Audio === "function" ? new Audio(TAP_SOUND_SRC) : null;
 let settingsOpen = false;
+let pendingServiceWorker = null;
 
 if (tapSoundTemplate) {
   tapSoundTemplate.preload = "auto";
@@ -196,6 +199,16 @@ function attachEvents() {
       closeSettings();
     }
   });
+
+  refreshAppButton.addEventListener("click", () => {
+    if (!pendingServiceWorker) {
+      return;
+    }
+
+    refreshAppButton.disabled = true;
+    refreshAppButton.textContent = "Refreshing...";
+    pendingServiceWorker.postMessage({ type: "SKIP_WAITING" });
+  });
 }
 
 function handleCounterPointerMove(event) {
@@ -277,7 +290,9 @@ function render(options = {}) {
   document.title = state.total > 0 ? `Coffee Counter (${state.total})` : "Coffee Counter";
 
   body.classList.toggle("is-settings-open", settingsOpen);
+  body.classList.toggle("has-update-banner", Boolean(pendingServiceWorker));
   counterScreen.setAttribute("aria-hidden", String(settingsOpen));
+  updateBanner.setAttribute("aria-hidden", String(!pendingServiceWorker));
   settingsScreen.setAttribute("aria-hidden", String(!settingsOpen));
 
   document.documentElement.style.setProperty("--app-bg", state.settings.backgroundColor);
@@ -527,7 +542,7 @@ function registerServiceWorker() {
         });
 
         if (registration.waiting) {
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          queuePendingUpdate(registration.waiting);
         }
 
         registration.addEventListener("updatefound", () => {
@@ -538,8 +553,12 @@ function registerServiceWorker() {
           }
 
           installingWorker.addEventListener("statechange", () => {
-            if (installingWorker.state === "installed" && registration.waiting) {
-              registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            if (
+              installingWorker.state === "installed" &&
+              registration.waiting &&
+              navigator.serviceWorker.controller
+            ) {
+              queuePendingUpdate(registration.waiting);
             }
           });
         });
@@ -548,4 +567,11 @@ function registerServiceWorker() {
         return null;
       });
   });
+}
+
+function queuePendingUpdate(worker) {
+  pendingServiceWorker = worker;
+  refreshAppButton.disabled = false;
+  refreshAppButton.textContent = "Refresh";
+  render({ announcement: "A new version is available. Refresh when ready." });
 }
