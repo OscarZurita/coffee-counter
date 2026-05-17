@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-counter-v11";
+const CACHE_NAME = "coffee-counter-v12";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -57,9 +57,10 @@ self.addEventListener("fetch", (event) => {
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
+  const networkRequest = createNetworkRequest(request);
 
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetch(networkRequest);
 
     if (shouldCacheResponse(networkResponse)) {
       cache.put(request, networkResponse.clone());
@@ -79,6 +80,10 @@ async function networkFirst(request) {
 
     throw error;
   }
+}
+
+function createNetworkRequest(request) {
+  return new Request(request, { cache: "reload" });
 }
 
 function shouldCacheResponse(response) {
